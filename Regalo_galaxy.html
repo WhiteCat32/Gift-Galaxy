@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Un Regalo Estelar · María Dolores y Señora Rocío</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%; background: #02010a; overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #eaf6ff; -webkit-tap-highlight-color: transparent;
+  }
+  #galaxy-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; z-index: 1; }
+  #fx { position: fixed; inset: 0; pointer-events: none; width: 100%; height: 100%; z-index: 10; }
+
+  /* ============ PANTALLA DE CARGA ============ */
+  #loadingScreen {
+    position: fixed; inset: 0; z-index: 20000;
+    background: radial-gradient(ellipse at center, #10052a 0%, #02010a 70%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 26px; padding: 20px;
+    transition: opacity 0.9s ease, visibility 0.9s ease;
+  }
+  #loadingScreen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .loader-ring {
+    width: 84px; height: 84px; border-radius: 50%;
+    border: 3px solid rgba(0, 229, 255, 0.15);
+    border-top-color: #00e5ff;
+    border-right-color: #ff2e97;
+    animation: spin 1.2s linear infinite;
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.4), inset 0 0 24px rgba(255, 46, 151, 0.15);
+    position: relative;
+  }
+  .loader-ring::after {
+    content: ""; position: absolute; inset: 10px; border-radius: 50%;
+    border: 2px solid rgba(255, 209, 102, 0.2);
+    border-left-color: #ffd166;
+    animation: spin 1.6s linear infinite reverse;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-title {
+    font-family: 'Georgia', serif; font-size: 1.4rem;
+    background: linear-gradient(90deg, #00e5ff, #a855f7, #ff2e97, #ffd166, #00e5ff);
+    background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; animation: shimmer 4s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4));
+    text-align: center;
+  }
+  @keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+  .loader-bar-track {
+    width: 240px; max-width: 80vw; height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px; overflow: hidden;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+  }
+  .loader-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #00e5ff, #a855f7, #ff2e97, #ffd166);
+    background-size: 300% 100%;
+    animation: shimmer 2s linear infinite;
+    box-shadow: 0 0 12px rgba(255, 46, 151, 0.4);
+    transition: width 0.25s ease;
+  }
+  .loader-text {
+    font-size: 0.85rem; color: #d8c9f0;
+    opacity: 0.85; min-height: 1.2em;
+    letter-spacing: 0.5px; text-align: center;
+  }
+
+  /* ============ PANTALLA DE INICIO ============ */
+  .start-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; z-index: 10000;
+    background: radial-gradient(ellipse at 50% 45%, rgba(10,2,25,0.55) 0%, rgba(2,1,10,0.85) 55%, rgba(0,0,0,0.97) 100%);
+    transition: opacity 1s ease-out, visibility 1s ease-out;
+  }
+  .start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .start-content {
+    position: relative;
+    background: linear-gradient(160deg, rgba(20,8,35,0.94), rgba(4,1,12,0.96));
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    border-radius: 28px;
+    padding: 42px 30px 34px;
+    max-width: 440px; width: 100%;
+    text-align: center;
+    box-shadow:
+      0 0 30px rgba(0, 229, 255, 0.12),
+      0 0 70px rgba(255, 46, 151, 0.08),
+      0 30px 80px rgba(0,0,0,0.7);
+    animation: cardIn 1.2s ease-out;
+  }
+  .start-content::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 28px; padding: 1px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(168,85,247,0.4), rgba(255,46,151,0.6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none; opacity: 0.6;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .start-title {
+    font-family: 'Georgia', serif;
+    font-size: clamp(1.8rem, 5.5vw, 2.6rem);
+    font-weight: 700; line-height: 1.2; margin-bottom: 12px;
+    background: linear-gradient(90deg, #00e5ff, #a855f7, #ff2e97, #ffd166, #00e5ff);
+    background-size: 300% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; animation: shimmer 6s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(0,229,255,0.35));
+  }
+  .start-subtitle {
+    color: #d8c9f0;
+    font-size: clamp(0.88rem, 2.8vw, 1.02rem);
+    line-height: 1.55; margin-bottom: 26px;
+    font-weight: 300;
+  }
+  .start-buttons { display: flex; flex-direction: column; gap: 14px; }
+  .start-button {
+    position: relative;
+    background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(168,85,247,0.08), rgba(255,46,151,0.06));
+    border: 1.5px solid rgba(0, 229, 255, 0.5);
+    border-radius: 18px;
+    padding: 16px 20px; cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    transition: all 0.35s ease;
+    color: white; font-family: inherit;
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.1), inset 0 0 16px rgba(0, 229, 255, 0.03);
+    overflow: hidden;
+  }
+  .start-button::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+    transform: translateX(-130%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+  }
+  .start-button:hover::after { transform: translateX(130%); }
+  .start-button:hover { transform: translateY(-3px); }
+  .start-button[data-person="dolores"] { border-color: rgba(0, 229, 255, 0.55); }
+  .start-button[data-person="dolores"]:hover {
+    border-color: rgba(0, 229, 255, 1);
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.4), inset 0 0 20px rgba(0, 229, 255, 0.1);
+  }
+  .start-button[data-person="rocio"] { border-color: rgba(196, 181, 253, 0.55); }
+  .start-button[data-person="rocio"]:hover {
+    border-color: rgba(196, 181, 253, 1);
+    box-shadow: 0 0 24px rgba(196, 181, 253, 0.4), inset 0 0 20px rgba(196, 181, 253, 0.1);
+  }
+  .btn-emoji { font-size: 1.7rem; line-height: 1; }
+  .btn-text {
+    font-size: 1.1rem; font-weight: 600; color: #fff; letter-spacing: 0.4px;
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  }
+  .start-button[data-person="rocio"] .btn-text { text-shadow: 0 0 8px rgba(196, 181, 253, 0.5); }
+  .btn-sub { font-size: 0.82rem; color: #c8bce0; opacity: 0.9; font-weight: 300; }
+
+  /* ============ HUD ============ */
+  .hud {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    opacity: 0; transition: opacity 0.9s ease 0.3s;
+  }
+  .hud:not(.hidden) { opacity: 1; }
+  .hud > * { pointer-events: auto; }
+  .pill {
+    position: absolute; top: 14px; left: 50%;
+    transform: translateX(-50%);
+    padding: 9px 20px; border-radius: 999px;
+    background: rgba(6, 2, 16, 0.92);
+    border: 1px solid rgba(0, 229, 255, 0.55);
+    color: #eaf9ff; font-size: 13px; text-align: center;
+    max-width: 78vw; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.25), inset 0 0 10px rgba(0, 229, 255, 0.05);
+    text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+    pointer-events: none !important;
+    letter-spacing: 0.3px; transition: all 0.4s ease;
+    font-weight: 500;
+  }
+  .hud-btn {
+    position: absolute; top: 14px;
+    padding: 9px 15px; border-radius: 999px;
+    background: rgba(6, 2, 16, 0.9);
+    border: 1.5px solid rgba(255, 182, 193, 0.55);
+    color: #ffe6f4; font-size: 12px; cursor: pointer;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-family: inherit; transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 46, 151, 0.2);
+    text-shadow: 0 0 6px rgba(255, 46, 151, 0.4);
+    font-weight: 500;
+  }
+  .hud-btn:hover {
+    background: rgba(255, 46, 151, 0.25);
+    border-color: rgba(255, 182, 193, 1);
+    box-shadow: 0 0 20px rgba(255, 46, 151, 0.5);
+  }
+  #backBtn { left: 14px; }
+  #msgBtn  { right: 14px; }
+
+  /* ============ INSTRUCCIONES ============ */
+  .instructions-toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translate(-50%, 30px);
+    background: rgba(6, 2, 16, 0.94);
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-size: 12.5px; line-height: 1.55;
+    color: #eaf9ff; text-align: left;
+    max-width: 340px; width: calc(100% - 40px);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15), 0 15px 40px rgba(0,0,0,0.6);
+    opacity: 0; z-index: 500;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    pointer-events: none;
+  }
+  .instructions-toast.visible {
+    opacity: 1; transform: translate(-50%, 0);
+  }
+  .instructions-toast div { padding: 2px 0; }
+  .instructions-toast strong { color: #ffd166; }
+
+  /* ============ DIÁLOGO ============ */
+  .msg-dialog {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+    padding: 20px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .msg-dialog:not(.hidden) { opacity: 1; visibility: visible; }
+  .msg-box {
+    position: relative;
+    background: linear-gradient(160deg, rgba(18, 6, 28, 0.99), rgba(4, 1, 10, 0.99));
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    border-radius: 22px; padding: 32px 26px;
+    max-width: 520px; width: 100%; color: #eaf6ff;
+    box-shadow: 0 0 40px rgba(0, 229, 255, 0.15), 0 0 80px rgba(255, 46, 151, 0.1);
+    max-height: 85vh; overflow-y: auto;
+  }
+  .msg-box::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 22px; padding: 1px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(255,46,151,0.6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+  .msg-box h2 {
+    color: #fff; font-family: 'Georgia', serif;
+    margin: 0 0 18px; font-size: 1.5rem; text-align: center;
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  }
+  .msg-box p { font-size: 1rem; line-height: 1.7; margin: 0 0 14px; text-align: justify; font-weight: 300; color: #d8e9f5; }
+  .msg-box button {
+    display: block; margin: 24px auto 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(255,46,151,0.2));
+    border: 1.5px solid rgba(255, 46, 151, 0.6);
+    color: #fff; padding: 12px 32px; border-radius: 999px;
+    font-family: inherit; font-size: 1rem; cursor: pointer; font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 14px rgba(255, 46, 151, 0.25), inset 0 0 12px rgba(0, 229, 255, 0.08);
+    transition: all 0.3s ease;
+  }
+  .msg-box button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 24px rgba(255, 46, 151, 0.5), inset 0 0 16px rgba(255, 46, 151, 0.15);
+  }
+
+  @media (max-width: 600px) {
+    .hud-btn { font-size: 11px; padding: 8px 12px; }
+    .pill { font-size: 11px; padding: 7px 14px; max-width: 62vw; }
+    .msg-box { padding: 26px 20px; }
+    .msg-box h2 { font-size: 1.3rem; }
+    .start-content { padding: 32px 22px 28px; }
+    .instructions-toast { font-size: 11.5px; padding: 10px 14px; }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loader-ring"></div>
+  <div class="loader-title">Preparando tu universo</div>
+  <div class="loader-bar-track"><div class="loader-bar-fill" id="loaderBar"></div></div>
+  <div class="loader-text" id="loaderText">Encendiendo las estrellas...</div>
+</div>
+
+<div class="start-screen hidden" id="startScreen">
+  <div class="start-content">
+    <h1 class="start-title">Un regalo estelar</h1>
+    <p class="start-subtitle">Un pequeño universo hecho con cariño. Elige para quién es:</p>
+    <div class="start-buttons">
+      <button class="start-button" data-person="dolores">
+        <span class="btn-emoji">🐶</span>
+        <span class="btn-text">Para María Dolores</span>
+        <span class="btn-sub">Palabras para seguir adelante</span>
+      </button>
+      <button class="start-button" data-person="rocio">
+        <span class="btn-emoji">🌸</span>
+        <span class="btn-text">Para la Señora Rocío</span>
+        <span class="btn-sub">Con serenidad y feliz cumpleaños</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<canvas id="galaxy-canvas"></canvas>
+
+<div class="hud hidden" id="hud">
+  <button class="hud-btn" id="backBtn">← Cambiar</button>
+  <div class="pill" id="pill">Cargando...</div>
+  <button class="hud-btn" id="msgBtn">💌 Mensaje</button>
+</div>
+
+<div class="msg-dialog hidden" id="msgDialog">
+  <div class="msg-box">
+    <h2 id="msgTitle">Para ti</h2>
+    <div id="msgBody"></div>
+    <button id="msgClose">Cerrar</button>
+  </div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<script>
+(function () {
+'use strict';
+
+const PEOPLE = {
+  dolores: {
+    pill: '🐶 Para María Dolores · Sigue adelante ✨',
+    pillColor: 'rgba(0, 229, 255, 0.6)',
+    pillShadow: '0 0 14px rgba(0, 229, 255, 0.3), inset 0 0 10px rgba(0, 229, 255, 0.05)',
+    pillTextColor: '#dffbff',
+    pillTextShadow: '0 0 6px rgba(0, 229, 255, 0.5)',
+    title: 'Para María Dolores',
+    message: [
+      'Sé que me pasé de la fecha de tu cumpleaños, pero los buenos deseos y el cariño sincero no tienen reloj. Quería dejarte este pequeño detalle digital hecho especialmente para ti.',
+      'Espero que estés teniendo un año increíble, lleno de metas cumplidas y sonrisas. ¡Feliz cumple (atrasado)! 🎂',
+      'Y hablando de tu carrera: sigue adelante, no te detengas. Cada desvelo, cada examen, cada día difícil está construyendo algo grande en ti. Confía en tu proceso, que vas por muy buen camino. 💪',
+      'Como la familia de Bluey, espero que nunca pierdas esa chispa de alegría que te caracteriza. 🐶💙',
+      'Con mucho aprecio, Juan Martín.'
+    ],
+    phrases: [
+      'Sigue adelante ✨', 'Tu carrera, tu futuro', 'Confía en tu proceso',
+      'Eres capaz', 'No te rindas', 'Cada esfuerzo vale', 'Vas brillando',
+      'Tu título te espera', 'Un paso a la vez', 'Cree en ti', 'Eres luz',
+      'Sigue soñando', 'Fuerza y fe', 'Lo lograrás', 'Eres fuerte',
+      'Adelante, María', 'Nada te detiene', 'Brilla siempre', 'Tu meta, tu Norte',
+      'Paso firme', 'Corazón valiente', 'Te mereces lo mejor',
+      'Tu futuro es brillante', 'Cada día cuenta', 'Eres ejemplo',
+      'Fe en ti misma', 'Sigue, sigue, sigue', 'Vas a lograrlo'
+    ],
+    phraseColors: [
+      'rgba(0,229,255,1)', 'rgba(125,211,252,1)',
+      'rgba(255,255,255,1)', 'rgba(255,209,102,1)', 'rgba(255,140,66,1)'
+    ],
+    ringColors: [0x00e5ff, 0x7dd3fc, 0xffd166],
+    auroraColors: [0x00e5ff, 0x7dd3fc, 0xffd166],
+    starPalette: [[1,1,1], [0,0.9,1], [0.49,0.83,0.99], [1,0.82,0.4], [1,0.55,0.26]],
+    hasBluey: true, hasCrystals: false,
+    rotateSpeed: 0.06
+  },
+  rocio: {
+    pill: '🌸 Para la Señora Rocío · Feliz cumpleaños 🎂',
+    pillColor: 'rgba(196, 181, 253, 0.65)',
+    pillShadow: '0 0 14px rgba(196, 181, 253, 0.3), inset 0 0 10px rgba(196, 181, 253, 0.05)',
+    pillTextColor: '#f3e8ff',
+    pillTextShadow: '0 0 6px rgba(196, 181, 253, 0.6)',
+    title: 'Para la Señora Rocío',
+    message: [
+      'Le envío un saludo muy cordial y mis más sinceras felicitaciones por su cumpleaños (aunque un poquito tarde). Quería aprovechar este medio para desearle lo mejor: mucha salud, tranquilidad y bienestar en compañía de toda su familia.',
+      'Le agradezco siempre por los buenos momentos compartidos y por el cariño de siempre. ¡Que cumpla muchos años más, Señora Rocío! 🥳',
+      'Con respeto y afecto, Juan Martín.'
+    ],
+    phrases: [
+      '¡Feliz cumpleaños!', 'Que cumplas muchos más', 'Salud y bendiciones',
+      'Con mucho cariño', 'Gracias por todo', 'Eres especial',
+      'Que la vida te sonría', 'Abrazos fuertes', 'Bendita seas',
+      'Días felices', 'Felicidades 🎂', 'Luz en tu camino',
+      'Alegría sin fin', 'Con amor, Juan', 'Eres única',
+      'Familia y amor', 'Tu sonrisa ilumina', 'Paz y bienestar',
+      'Muchos años más', 'Con respeto y afecto', 'Señora Rocío 🌸',
+      'Un brindis por ti', 'Tus sueños, realidad', 'Fuerza y salud',
+      'Corazón generoso', 'Que nunca falte amor', 'Sigue brillando',
+      'Eres luz y bendición'
+    ],
+    phraseColors: [
+      'rgba(196,181,253,1)', 'rgba(233,213,255,1)',
+      'rgba(255,255,255,1)', 'rgba(254,243,199,1)', 'rgba(212,212,216,1)'
+    ],
+    ringColors: [0xc4b5fd, 0xe9d5ff, 0xfef3c7],
+    auroraColors: [0xc4b5fd, 0xe9d5ff, 0xfef3c7],
+    starPalette: [[1,1,1], [0.77,0.71,0.99], [0.91,0.83,1], [0.99,0.95,0.78], [0.83,0.83,0.85]],
+    hasBluey: false, hasCrystals: true,
+    rotateSpeed: 0.03
+  }
+};
+
+const IS_MOBILE   = window.innerWidth < 768;
+const MAX_DPR     = Math.min(IS_MOBILE ? 1.5 : 2, window.devicePixelRatio || 1);
+const STAR_COUNT  = IS_MOBILE ? 4000 : 6000;
+const DUST_COUNT  = IS_MOBILE ? 500 : 800;
+const PHRASE_SPRITES = IS_MOBILE ? 50 : 75;
+const FLOWER_COUNT   = IS_MOBILE ? 22 : 35;
+const NEBULA_COUNT   = IS_MOBILE ? 8 : 12;
+const CRYSTAL_COUNT  = IS_MOBILE ? 12 : 18;
+const AURORA_LAYERS  = 3;
+
+const loadingScreen = document.getElementById('loadingScreen');
+const loaderBar = document.getElementById('loaderBar');
+const loaderText = document.getElementById('loaderText');
+const startScreen = document.getElementById('startScreen');
+const hud         = document.getElementById('hud');
+const pill        = document.getElementById('pill');
+const backBtn     = document.getElementById('backBtn');
+const msgBtn      = document.getElementById('msgBtn');
+const msgDialog   = document.getElementById('msgDialog');
+const msgTitle    = document.getElementById('msgTitle');
+const msgBody     = document.getElementById('msgBody');
+const msgClose    = document.getElementById('msgClose');
+
+let currentPerson = null;
+let phraseTexCache = {};
+
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { /* no op */ }
+  }
+}
+function playChime(freq, duration) {
+  if (!audioCtx) return;
+  freq = freq || 880; duration = duration || 0.5;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { /* no op */ }
+}
+
+const canvas   = document.getElementById('galaxy-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(MAX_DPR);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setClearColor(0x02010a, 1);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 10;
+controls.maxDistance = 220;
+controls.target.set(0, 0, 0);
+
+function setCamera() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const isM = w < 768 || w < h;
+  camera.fov = isM ? 90 : 75;
+  camera.position.set(0, isM ? 26 : 22, isM ? 110 : 75);
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+setCamera();
+
+/* FONDO ESTELAR */
+function makeStarTexture(size, count) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const r = size / 2;
+  const bg = g.createRadialGradient(r, r, r * 0.15, r, r, r);
+  bg.addColorStop(0, '#0a0018'); bg.addColorStop(0.55, '#04000c'); bg.addColorStop(1, '#000000');
+  g.fillStyle = bg; g.fillRect(0, 0, size, size);
+  const palettes = [
+    [255, 240, 250], [200, 240, 255], [255, 200, 230], [210, 190, 255], [255, 240, 200]
+  ];
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const base = Math.random() * 0.6 + 0.25;
+    const rad = Math.random() * 2.2 + 1.2;
+    const glow = g.createRadialGradient(x, y, 0, x, y, rad);
+    const pick = palettes[(Math.random() * palettes.length) | 0];
+    const col = pick[0] + ',' + pick[1] + ',' + pick[2];
+    glow.addColorStop(0, 'rgba(255,255,255,' + (0.75 * base) + ')');
+    glow.addColorStop(0.4, 'rgba(' + col + ',' + (0.35 * base) + ')');
+    glow.addColorStop(1, 'rgba(' + col + ',0)');
+    g.fillStyle = glow;
+    g.beginPath();
+    g.arc(x, y, Math.random() * 1.2 + 0.6, 0, Math.PI * 2);
+    g.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+const starTex = makeStarTexture(1024, IS_MOBILE ? 1600 : 2500);
+starTex.wrapS = starTex.wrapT = THREE.RepeatWrapping;
+const bgSphere = new THREE.Mesh(
+  new THREE.SphereGeometry(600, 48, 48),
+  new THREE.MeshBasicMaterial({ map: starTex, side: THREE.BackSide, transparent: false, opacity: 0.75 })
+);
+bgSphere.renderOrder = -10;
+scene.add(bgSphere);
+
+/* NEBULOSAS */
+const nebulaGroup = new THREE.Group();
+scene.add(nebulaGroup);
+
+const NEBULA_PALETTES = [
+  'rgba(0,229,255,', 'rgba(168,85,247,', 'rgba(255,46,151,',
+  'rgba(255,209,102,', 'rgba(124,58,237,', 'rgba(125,211,252,'
+];
+
+function makeNebulaTexture(colorPrefix) {
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const r = size / 2;
+  for (let i = 0; i < 14; i++) {
+    const x = r + (Math.random() - 0.5) * size * 0.6;
+    const y = r + (Math.random() - 0.5) * size * 0.6;
+    const rad = size * (0.12 + Math.random() * 0.22);
+    const grad = g.createRadialGradient(x, y, 0, x, y, rad);
+    grad.addColorStop(0, colorPrefix + '0.22)');
+    grad.addColorStop(0.45, colorPrefix + '0.09)');
+    grad.addColorStop(1, colorPrefix + '0)');
+    g.fillStyle = grad;
+    g.beginPath();
+    g.arc(x, y, rad, 0, Math.PI * 2);
+    g.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+for (let i = 0; i < NEBULA_COUNT; i++) {
+  const color = NEBULA_PALETTES[i % NEBULA_PALETTES.length];
+  const tex = makeNebulaTexture(color);
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true, blending: THREE.AdditiveBlending,
+    opacity: 0.3, depthWrite: false, depthTest: false
+  });
+  const spr = new THREE.Sprite(mat);
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 140 + Math.random() * 280;
+  spr.position.set(Math.cos(angle) * dist, (Math.random() - 0.5) * 180, Math.sin(angle) * dist - 100);
+  const sc = 200 + Math.random() * 240;
+  spr.scale.set(sc, sc, 1);
+  spr.renderOrder = -5;
+  spr.userData = {
+    baseScale: sc, phase: Math.random() * Math.PI * 2,
+    pulseAmp: 0.06 + Math.random() * 0.08,
+    pulseSpeed: 0.15 + Math.random() * 0.25
+  };
+  nebulaGroup.add(spr);
+}
+
+/* GALAXIA */
+const galaxyGroup = new THREE.Group();
+scene.add(galaxyGroup);
+const phraseGroup = new THREE.Group();
+galaxyGroup.add(phraseGroup);
+
+const GALAXY_POS = new Float32Array(STAR_COUNT * 3);
+(function buildGalaxyPositions() {
+  const radius = 82;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const dist = Math.random() * radius * 1.15;
+    const y = (Math.random() - 0.5) * 36 * Math.pow(1 - Math.min(dist, radius) / radius, 1.5);
+    GALAXY_POS[i * 3]     = Math.cos(ang) * dist;
+    GALAXY_POS[i * 3 + 1] = y;
+    GALAXY_POS[i * 3 + 2] = Math.sin(ang) * dist;
+  }
+})();
+
+const galaxyGeom = new THREE.BufferGeometry();
+galaxyGeom.setAttribute('position', new THREE.BufferAttribute(GALAXY_POS.slice(), 3));
+const galaxyColors = new Float32Array(STAR_COUNT * 3);
+galaxyGeom.setAttribute('color', new THREE.BufferAttribute(galaxyColors, 3));
+const galaxyMat = new THREE.PointsMaterial({
+  size: 0.32, vertexColors: true, transparent: true, opacity: 0.7,
+  blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+});
+const galaxyPoints = new THREE.Points(galaxyGeom, galaxyMat);
+galaxyGroup.add(galaxyPoints);
+
+function applyGalaxyColors(palette) {
+  const radius = 82;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const dist = Math.sqrt(GALAXY_POS[i*3]*GALAXY_POS[i*3] + GALAXY_POS[i*3+2]*GALAXY_POS[i*3+2]);
+    const coreBias = dist < radius * 0.3 ? 0.55 : 0.30;
+    const r = Math.random();
+    let col;
+    if (r < coreBias) col = palette[0];
+    else if (r < coreBias + 0.15) col = palette[3];
+    else if (r < coreBias + 0.35) col = palette[1];
+    else if (r < coreBias + 0.55) col = palette[2];
+    else if (r < coreBias + 0.72) col = palette[4];
+    else col = palette[0];
+    galaxyColors[i*3]     = col[0];
+    galaxyColors[i*3 + 1] = col[1];
+    galaxyColors[i*3 + 2] = col[2];
+  }
+  galaxyGeom.attributes.color.needsUpdate = true;
+}
+
+/* POLVO GALÁCTICO */
+(function createDust() {
+  const geom = new THREE.BufferGeometry();
+  const pos = new Float32Array(DUST_COUNT * 3);
+  const cols = new Float32Array(DUST_COUNT * 3);
+  const pal = [[1,1,1], [0,0.9,1], [1,0.18,0.59], [0.66,0.33,0.97], [1,0.82,0.4]];
+  for (let i = 0; i < DUST_COUNT; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = 15 + Math.random() * 65;
+    const y = (Math.random() - 0.5) * 10;
+    pos[i*3] = Math.cos(a) * d; pos[i*3+1] = y; pos[i*3+2] = Math.sin(a) * d;
+    const c = pal[(Math.random() * pal.length) | 0];
+    cols[i*3] = c[0]; cols[i*3+1] = c[1]; cols[i*3+2] = c[2];
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geom.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  galaxyGroup.add(new THREE.Points(geom, new THREE.PointsMaterial({
+    size: 0.5, vertexColors: true, transparent: true, opacity: 0.65,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+})();
+
+/* NÚCLEO + ANILLOS */
+const coreR = 12;
+const coreCanvas = document.createElement('canvas');
+coreCanvas.width = coreCanvas.height = 256;
+const cg = coreCanvas.getContext('2d');
+const grd = cg.createRadialGradient(128, 128, 8, 128, 128, 128);
+grd.addColorStop(0, '#3a0028'); grd.addColorStop(0.55, '#1a0012'); grd.addColorStop(1, '#000000');
+cg.fillStyle = grd; cg.beginPath(); cg.arc(128, 128, 128, 0, Math.PI * 2); cg.fill();
+
+const core = new THREE.Mesh(
+  new THREE.SphereGeometry(coreR, 48, 48),
+  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(coreCanvas) })
+);
+core.renderOrder = 1;
+scene.add(core);
+
+const rings = [];
+function applyRingColors(colors) {
+  while (rings.length) {
+    const r = rings.pop();
+    scene.remove(r); r.geometry.dispose(); r.material.dispose();
+  }
+  const tilts = [-Math.PI / 2, -Math.PI / 2 + 0.35, -Math.PI / 2 - 0.35];
+  const rots  = [0.18, -0.15, 0.22];
+  for (let i = 0; i < 3; i++) {
+    const r = new THREE.Mesh(
+      new THREE.RingGeometry(coreR * (1.05 + i * 0.14), coreR * (1.16 + i * 0.14), 96),
+      new THREE.MeshBasicMaterial({
+        color: colors[i], transparent: true, opacity: 0.7,
+        side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false
+      })
+    );
+    r.rotation.x = tilts[i];
+    r.renderOrder = 0.5 + i * 0.1;
+    r.userData = { rotSpeed: rots[i] };
+    scene.add(r);
+    rings.push(r);
+  }
+}
+applyRingColors([0x00e5ff, 0xff2e97, 0xa855f7]);
+
+function makeHaloTexture(size, inner) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const r = size / 2;
+  const grd = g.createRadialGradient(r, r, r * inner, r, r, r);
+  grd.addColorStop(0.0, 'rgba(255,200,220,0.32)');
+  grd.addColorStop(0.25, 'rgba(255,180,210,0.2)');
+  grd.addColorStop(0.55, 'rgba(168,85,247,0.1)');
+  grd.addColorStop(0.85, 'rgba(0,229,255,0.03)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true; return tex;
+}
+const haloPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(360, 360),
+  new THREE.MeshBasicMaterial({
+    map: makeHaloTexture(1024, 0.45),
+    transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, opacity: 0.5
+  })
+);
+haloPlane.rotation.x = -Math.PI / 2;
+haloPlane.renderOrder = 0.15;
+scene.add(haloPlane);
+
+/* ROSAS */
+const flowerGroup = new THREE.Group();
+scene.add(flowerGroup);
+
+function createFlowerTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const centerG = g.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/4);
+  centerG.addColorStop(0, 'rgba(255,230,150,0.9)');
+  centerG.addColorStop(1, 'rgba(255,180,100,0.5)');
+  g.fillStyle = centerG; g.beginPath(); g.arc(size/2, size/2, size/4, 0, Math.PI * 2); g.fill();
+  const colors = ['rgba(255,100,150,0.75)', 'rgba(255,150,200,0.75)',
+                  'rgba(255,120,180,0.75)', 'rgba(255,180,220,0.75)', 'rgba(255,130,170,0.75)'];
+  for (let i = 0; i < 5; i++) {
+    const a  = (i / 5) * Math.PI * 2;
+    const px = size/2 + Math.cos(a) * size/3;
+    const py = size/2 + Math.sin(a) * size/3;
+    const pg = g.createRadialGradient(px, py, 0, px, py, size/5);
+    pg.addColorStop(0, colors[i]); pg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = pg; g.beginPath(); g.arc(px, py, size/5, 0, Math.PI * 2); g.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+const flowerTex = createFlowerTexture(128);
+const flowerMat = new THREE.SpriteMaterial({
+  map: flowerTex, transparent: true, opacity: 0.65,
+  blending: THREE.AdditiveBlending, depthWrite: false
+});
+for (let i = 0; i < FLOWER_COUNT; i++) {
+  const f = new THREE.Sprite(flowerMat.clone());
+  const a = Math.random() * Math.PI * 2;
+  const d = 120 + Math.random() * 90;
+  const h = (Math.random() - 0.5) * 70;
+  f.position.set(Math.cos(a) * d, h, Math.sin(a) * d);
+  f.scale.set(8, 8, 1);
+  f.userData = {
+    originalY: h, speed: 0.2 + Math.random() * 0.3,
+    rotationSpeed: (Math.random() - 0.5) * 0.02,
+    floatAmplitude: 2 + Math.random() * 3,
+    phase: Math.random() * Math.PI * 2
+  };
+  flowerGroup.add(f);
+}
+
+/* AURORA */
+const auroraGroup = new THREE.Group();
+scene.add(auroraGroup);
+
+function rebuildAurora(colors) {
+  while (auroraGroup.children.length) {
+    const a = auroraGroup.children[0];
+    auroraGroup.remove(a); a.geometry.dispose(); a.material.dispose();
+  }
+  for (let i = 0; i < AURORA_LAYERS; i++) {
+    const geo = new THREE.PlaneGeometry(500, 150, 24, 10);
+    const p = geo.attributes.position.array;
+    for (let j = 0; j < p.length; j += 3) {
+      const x = p[j], z = p[j + 2];
+      p[j + 1] = Math.sin(x * 0.03 + z * 0.02) * 10;
+    }
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshBasicMaterial({
+      color: colors[i % colors.length], transparent: true,
+      opacity: 0.07 + i * 0.03, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const aurora = new THREE.Mesh(geo, mat);
+    aurora.rotation.x = Math.PI / 2;
+    aurora.position.y = -40 + i * 18;
+    aurora.position.z = -100 - i * 30;
+    aurora.scale.set(1, 1 + i * 0.3, 1);
+    aurora.userData = { speed: 0.01 + i * 0.005, waveSpeed: 0.002 + i * 0.001 };
+    auroraGroup.add(aurora);
+  }
+}
+rebuildAurora([0x00e5ff, 0x7dd3fc, 0xffd166]);
+
+/* =========================================================
+   PERSONAJES DE BLUEY (Tropa completa)
+   ========================================================= */
+function createCharacterTexture(bodyColor, bellyColor, earColor, isMuffin) {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const cx = size/2, cy = size/2;
+
+  // Orejas
+  g.fillStyle = earColor;
+  g.beginPath(); g.ellipse(cx - size*0.18, cy - size*0.14, size*0.10, size*0.18, 0.35, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(cx + size*0.18, cy - size*0.14, size*0.10, size*0.18, -0.35, 0, Math.PI*2); g.fill();
+
+  // Cuerpo
+  g.fillStyle = bodyColor;
+  g.beginPath(); g.ellipse(cx, cy + size*0.20, size*0.28, size*0.22, 0, 0, Math.PI*2); g.fill();
+
+  // Cabeza
+  g.fillStyle = bodyColor;
+  g.beginPath(); g.arc(cx, cy - size*0.04, size*0.24, 0, Math.PI*2); g.fill();
+
+  // Manchas de Muffin
+  if (isMuffin) {
+    g.fillStyle = earColor;
+    g.beginPath(); g.arc(cx - size*0.15, cy - size*0.15, size*0.06, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.arc(cx + size*0.1, cy - size*0.2, size*0.05, 0, Math.PI*2); g.fill();
+  }
+
+  // Hocico
+  g.fillStyle = bellyColor;
+  g.beginPath(); g.ellipse(cx, cy + size*0.06, size*0.16, size*0.12, 0, 0, Math.PI*2); g.fill();
+
+  // Nariz
+  g.fillStyle = '#2a2a2a';
+  g.beginPath(); g.ellipse(cx, cy + size*0.005, size*0.05, size*0.035, 0, 0, Math.PI*2); g.fill();
+
+  // Ojos
+  g.fillStyle = '#2a2a2a';
+  g.beginPath(); g.arc(cx - size*0.09, cy - size*0.10, size*0.033, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.arc(cx + size*0.09, cy - size*0.10, size*0.033, 0, Math.PI*2); g.fill();
+
+  // Brillos de ojos
+  g.fillStyle = '#ffffff';
+  g.beginPath(); g.arc(cx - size*0.08, cy - size*0.11, size*0.012, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.arc(cx + size*0.10, cy - size*0.11, size*0.012, 0, Math.PI*2); g.fill();
+
+  // Sonrisa
+  g.strokeStyle = '#2a2a2a';
+  g.lineWidth = size*0.014;
+  g.lineCap = 'round';
+  g.beginPath(); g.arc(cx, cy + size*0.10, size*0.06, 0.15*Math.PI, 0.85*Math.PI); g.stroke();
+
+  return new THREE.CanvasTexture(c);
+}
+
+const dogCharacters = [
+    { name: 'Bluey', body: '#7ec8e3', belly: '#fef3e2', ear: '#3a7ca5' },
+    { name: 'Bingo', body: '#f7a072', belly: '#fdf0d5', ear: '#e26d5c' },
+    { name: 'Bandit', body: '#4a7c9d', belly: '#fef3e2', ear: '#2c556e' },
+    { name: 'Chilli', body: '#e59866', belly: '#fdf0d5', ear: '#d35400' },
+    { name: 'Muffin', body: '#e0e0e0', belly: '#ffffff', ear: '#9e9e9e', isMuffin: true },
+    { name: 'Coco', body: '#f5b7b1', belly: '#fdf0d5', ear: '#e74c3c' },
+    { name: 'Lucky', body: '#f4d03f', belly: '#fdf0d5', ear: '#d4ac0d' },
+    { name: 'Indy', body: '#f0b27a', belly: '#fdf0d5', ear: '#d35400' }
+];
+
+const dogTextures = {};
+dogCharacters.forEach(dog => {
+    dogTextures[dog.name] = createCharacterTexture(dog.body, dog.belly, dog.ear, dog.isMuffin);
+});
+
+const blueyGroup = new THREE.Group();
+scene.add(blueyGroup);
+
+for (let i = 0; i < 16; i++) {
+    const dog = dogCharacters[i % dogCharacters.length];
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: dogTextures[dog.name], transparent: true, depthWrite: false, depthTest: false
+    }));
+    const a = Math.random() * Math.PI * 2;
+    const d = 55 + Math.random() * 45;
+    const h = (Math.random() - 0.5) * 40;
+    spr.position.set(Math.cos(a) * d, h, Math.sin(a) * d);
+    const sc = 12 + Math.random() * 8;
+    spr.scale.set(sc, sc, 1);
+    spr.userData = {
+        originalY: h,
+        speed: 0.5 + Math.random() * 0.5,
+        floatAmplitude: 3 + Math.random() * 4,
+        phase: Math.random() * Math.PI * 2
+    };
+    blueyGroup.add(spr);
+}
+blueyGroup.visible = false;
+
+/* CRISTALES ROCÍO */
+const crystalGroup = new THREE.Group();
+scene.add(crystalGroup);
+
+function createCrystalTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const cx = size/2, cy = size/2;
+  const grad = g.createRadialGradient(cx, cy, 0, cx, cy, size/2);
+  grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+  grad.addColorStop(0.4, 'rgba(196,181,253,0.55)');
+  grad.addColorStop(1, 'rgba(196,181,253,0)');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(cx, cy - size*0.42);
+  g.lineTo(cx + size*0.22, cy);
+  g.lineTo(cx, cy + size*0.42);
+  g.lineTo(cx - size*0.22, cy);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(cx - size*0.15, cy - size*0.1); g.lineTo(cx, cy + size*0.28); g.stroke();
+  return new THREE.CanvasTexture(c);
+}
+
+const crystalTex = createCrystalTexture(128);
+for (let i = 0; i < CRYSTAL_COUNT; i++) {
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: crystalTex, transparent: true, opacity: 0.75,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  }));
+  const a = Math.random() * Math.PI * 2;
+  const d = 100 + Math.random() * 110;
+  const h = (Math.random() - 0.5) * 80;
+  spr.position.set(Math.cos(a) * d, h, Math.sin(a) * d);
+  const sc = 5 + Math.random() * 4;
+  spr.scale.set(sc, sc, 1);
+  spr.userData = {
+    originalY: h, baseScale: sc, phase: Math.random() * Math.PI * 2,
+    floatSpeed: 0.3 + Math.random() * 0.3,
+    floatAmp: 3 + Math.random() * 3
+  };
+  crystalGroup.add(spr);
+}
+crystalGroup.visible = false;
+
+/* PLANETAS */
+const planetGroup = new THREE.Group();
+scene.add(planetGroup);
+
+function createPlanet(radius, color, dist, speed, tilt, ringColor) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 16, 16),
+    new THREE.MeshBasicMaterial({ color })
+  );
+  group.add(body);
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 1.35, radius * 1.75, 32),
+    new THREE.MeshBasicMaterial({
+      color: ringColor, transparent: true, opacity: 0.55,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false
+    })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.rotation.z = 0.3;
+  group.add(ring);
+  group.userData = { dist, speed, tilt, phase: Math.random() * Math.PI * 2, radius };
+  group.renderOrder = 3;
+  return group;
+}
+
+const planets = [
+  createPlanet(1.6, 0x00e5ff, 130, 0.004, 6, 0x7dd3fc),
+  createPlanet(1.2, 0xffd166, 160, -0.003, -4, 0xff8c42),
+  createPlanet(2.0, 0xa855f7, 190, 0.0025, 10, 0xc4b5fd),
+  createPlanet(1.0, 0xff2e97, 145, -0.005, -8, 0xff6ec7)
+];
+planets.forEach(p => planetGroup.add(p));
+
+/* =========================================================
+   FRASES CON PLACA OSCURA LEGIBLE
+   ========================================================= */
+function makePhraseTexture(text, glowColor) {
+  const key = glowColor + '|' + text;
+  if (phraseTexCache[key]) return phraseTexCache[key];
+
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 160;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+
+  g.font = '800 54px Georgia, Times New Roman, serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+
+  const metrics = g.measureText(text);
+  const padX = 48;
+  const padY = 22;
+  const boxW = Math.min(c.width - 40, metrics.width + padX * 2);
+  const boxH = 54 + padY * 2;
+  const boxX = (c.width - boxW) / 2;
+  const boxY = (c.height - boxH) / 2;
+  const r = 22;
+
+  g.beginPath();
+  g.moveTo(boxX + r, boxY);
+  g.lineTo(boxX + boxW - r, boxY);
+  g.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+  g.lineTo(boxX + boxW, boxY + boxH - r);
+  g.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+  g.lineTo(boxX + r, boxY + boxH);
+  g.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+  g.lineTo(boxX, boxY + r);
+  g.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+  g.closePath();
+
+  const bgGrad = g.createLinearGradient(0, boxY, 0, boxY + boxH);
+  bgGrad.addColorStop(0, 'rgba(8, 4, 18, 0.94)');
+  bgGrad.addColorStop(1, 'rgba(2, 1, 8, 0.96)');
+  g.fillStyle = bgGrad;
+  g.fill();
+
+  g.shadowColor = glowColor;
+  g.shadowBlur = 12;
+  g.strokeStyle = glowColor;
+  g.lineWidth = 3.5;
+  g.stroke();
+
+  g.shadowBlur = 0;
+  g.fillStyle = '#ffffff';
+  g.fillText(text, c.width / 2, c.height / 2);
+
+  const tex = new THREE.CanvasTexture(c);
+  phraseTexCache[key] = tex;
+  return tex;
+}
+
+function disposePhraseCache() {
+  Object.keys(phraseTexCache).forEach(k => phraseTexCache[k].dispose());
+  phraseTexCache = {};
+}
+function clearPhrases() {
+  while (phraseGroup.children.length) {
+    const s = phraseGroup.children[0];
+    if (s.material) s.material.dispose();
+    phraseGroup.remove(s);
+  }
+}
+function buildPhrases(phrases, colors) {
+  clearPhrases();
+  const arms = 5, radius = 82, maxH = 22, count = PHRASE_SPRITES;
+  const perArm = count / arms;
+  for (let i = 0; i < count; i++) {
+    const text = phrases[i % phrases.length];
+    const color = colors[i % colors.length];
+    const tex = makePhraseTexture(text, color);
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: tex, transparent: true, depthWrite: false,
+      blending: THREE.NormalBlending
+    }));
+    const ang = (i % perArm) * (Math.PI * 2 / perArm);
+    const armAng = Math.floor(i / perArm) * (Math.PI * 2 / arms);
+    const dist = Math.pow(i / count, 0.72) * radius;
+    const thick = Math.pow(1 - (dist / radius), 2);
+    spr.position.set(
+      Math.cos(ang + armAng) * dist,
+      (Math.random() - 0.5) * maxH * thick * 0.9,
+      Math.sin(ang + armAng) * dist
+    );
+    spr.scale.set(20, 3.1, 1);
+    phraseGroup.add(spr);
+  }
+}
+
+/* LOOP */
+let tw = 0, timeAccum = 0, lastNow = performance.now();
+let rotateSpeed = 0.05;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - lastNow) * 0.001);
+  lastNow = now;
+  if (document.hidden) return;
+  timeAccum += dt;
+  const t = timeAccum;
+
+  tw = (tw + 0.0003) % 1;
+  starTex.offset.set(tw, 0);
+
+  galaxyGroup.rotation.y = t * rotateSpeed;
+  core.rotation.y = t * 0.12;
+  haloPlane.rotation.z = t * 0.02;
+  const pulse = 1 + Math.sin(t * 2) * 0.022;
+  core.scale.set(pulse, pulse, pulse);
+
+  for (let i = 0; i < rings.length; i++) {
+    rings[i].rotation.z = t * rings[i].userData.rotSpeed;
+  }
+
+  // Animación de los personajes de Bluey
+  if (blueyGroup.visible) {
+    for (let i = 0; i < blueyGroup.children.length; i++) {
+      const b = blueyGroup.children[i];
+      b.position.y = b.userData.originalY + Math.sin(t * b.userData.speed + b.userData.phase) * b.userData.floatAmplitude;
+      b.material.rotation = Math.sin(t * 0.5 + b.userData.phase) * 0.15;
+    }
+  }
+
+  if (crystalGroup.visible) {
+    for (let i = 0; i < crystalGroup.children.length; i++) {
+      const cr = crystalGroup.children[i];
+      const u = cr.userData;
+      cr.position.y = u.originalY + Math.sin(t * u.floatSpeed + u.phase) * u.floatAmp;
+      const sc = u.baseScale * (1 + Math.sin(t * 0.7 + u.phase) * 0.15);
+      cr.scale.set(sc, sc, 1);
+      cr.material.rotation = t * 0.3 + u.phase;
+    }
+  }
+
+  for (let i = 0; i < planets.length; i++) {
+    const p = planets[i];
+    p.userData.phase += p.userData.speed;
+    p.position.x = Math.cos(p.userData.phase) * p.userData.dist;
+    p.position.z = Math.sin(p.userData.phase) * p.userData.dist;
+    p.position.y = Math.sin(p.userData.phase * 2 + i) * 6 + p.userData.tilt;
+    p.rotation.y += 0.02;
+  }
+
+  for (let i = 0; i < nebulaGroup.children.length; i++) {
+    const n = nebulaGroup.children[i];
+    const u = n.userData;
+    const s = u.baseScale * (1 + Math.sin(t * u.pulseSpeed + u.phase) * u.pulseAmp);
+    n.scale.set(s, s, 1);
+  }
+
+  for (let i = 0; i < flowerGroup.children.length; i++) {
+    const f = flowerGroup.children[i];
+    f.position.y = f.userData.originalY + Math.sin(t * f.userData.speed + f.userData.phase) * f.userData.floatAmplitude;
+    f.rotation.z += f.userData.rotationSpeed;
+    const sc = 8 + Math.sin(t * 0.5 + f.userData.phase) * 1.5;
+    f.scale.x = sc; f.scale.y = sc;
+  }
+
+  for (let i = 0; i < auroraGroup.children.length; i++) {
+    const a = auroraGroup.children[i];
+    a.position.x = Math.sin(t * a.userData.speed) * 50;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+/* OVERLAY 2D */
+const fx = document.getElementById('fx');
+const ctx = fx.getContext('2d');
+const fxDPR = Math.min(2, window.devicePixelRatio || 1);
+function resizeFx() {
+  fx.width = Math.floor(window.innerWidth * fxDPR);
+  fx.height = Math.floor(window.innerHeight * fxDPR);
+  fx.style.width = window.innerWidth + 'px';
+  fx.style.height = window.innerHeight + 'px';
+}
+resizeFx();
+
+const motes = [];
+for (let i = 0; i < 45; i++) {
+  motes.push({
+    x: Math.random() * fx.width, y: Math.random() * fx.height,
+    vx: (Math.random() - 0.5) * 0.15 * fxDPR, vy: (Math.random() - 0.5) * 0.15 * fxDPR,
+    r: (0.8 + Math.random() * 1.6) * fxDPR,
+    color: ['0,229,255', '255,46,151', '168,85,247', '255,209,102'][Math.floor(Math.random() * 4)],
+    alpha: 0.15 + Math.random() * 0.28,
+    tw: Math.random() * Math.PI * 2, twSpeed: 0.02 + Math.random() * 0.03
+  });
+}
+
+const shooting = [];
+let shootCooldown = 150;
+
+const trail = [];
+let mouseX = -100, mouseY = -100;
+document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; }, { passive: true });
+document.addEventListener('touchmove', e => {
+  const t = e.touches[0]; if (t) { mouseX = t.clientX; mouseY = t.clientY; }
+}, { passive: true });
+
+const hearts = [], petals = [];
+
+function drawHeart(x, y, s) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(0, -0.25 * s);
+  ctx.bezierCurveTo(0.5*s, -0.9*s, 1.4*s, -0.1*s, 0, 0.9*s);
+  ctx.bezierCurveTo(-1.4*s, -0.1*s, -0.5*s, -0.9*s, 0, -0.25*s);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s);
+  g.addColorStop(0, 'rgba(255,190,220,0.95)');
+  g.addColorStop(1, 'rgba(255,90,160,0)');
+  ctx.fillStyle = g; ctx.fill(); ctx.restore();
+}
+function drawFlower(x, y, s, color, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(0, 0, s / 3, 0, Math.PI * 2); ctx.fill();
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const px = Math.cos(a) * s / 2;
+    const py = Math.sin(a) * s / 2;
+    const gr = ctx.createRadialGradient(px, py, 0, px, py, s / 2);
+    gr.addColorStop(0, color); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(px, py, s / 2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function spawnBurst(cx, cy) {
+  const x = cx * fxDPR, y = cy * fxDPR;
+  const person = currentPerson;
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2;
+    hearts.push({
+      x, y, vx: Math.cos(a) * (0.6 + Math.random() * 0.8) * fxDPR,
+      vy: -(0.8 + Math.random() * 1.2) * fxDPR, life: 1,
+      size: (10 + Math.random() * 14) * fxDPR
+    });
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const hue = person === 'rocio' ? (Math.random() * 30 + 260) : (Math.random() * 40 + 15);
+    petals.push({
+      x, y, vx: Math.cos(a) * (0.4 + Math.random() * 0.6) * fxDPR,
+      vy: -(0.6 + Math.random() * 0.8) * fxDPR, life: 1,
+      size: (8 + Math.random() * 10) * fxDPR,
+      color: `hsl(${hue}, 80%, 72%)`,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.1
+    });
+  }
+  initAudio();
+  playChime(person === 'rocio' ? 523 : 784, 0.4);
+}
+
+let lastTap = 0;
+document.addEventListener('click', e => {
+  if (e.target.closest('button') || e.target.closest('.msg-box') || e.target.closest('.start-content')) return;
+  const now = performance.now();
+  if (now - lastTap < 320) spawnBurst(e.clientX, e.clientY);
+  lastTap = now;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  const t = e.changedTouches && e.changedTouches[0];
+  if (!t) return;
+  if (e.target.closest('button') || e.target.closest('.msg-box') || e.target.closest('.start-content')) return;
+  const now = performance.now();
+  if (now - lastTap < 320) spawnBurst(t.clientX, t.clientY);
+  lastTap = now;
+}, { passive: true });
+
+function loopFx() {
+  ctx.clearRect(0, 0, fx.width, fx.height);
+  ctx.globalCompositeOperation = 'lighter';
+
+  if (mouseX > 0 && mouseY > 0) {
+    trail.push({
+      x: mouseX * fxDPR, y: mouseY * fxDPR, life: 1,
+      r: (2 + Math.random() * 2) * fxDPR,
+      color: currentPerson === 'rocio' ? '196,181,253' : '0,229,255'
+    });
+  }
+  for (let i = trail.length - 1; i >= 0; i--) {
+    const tr = trail[i];
+    tr.life -= 0.05;
+    if (tr.life <= 0) { trail.splice(i, 1); continue; }
+    ctx.fillStyle = `rgba(${tr.color},${(tr.life * 0.32).toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(tr.x, tr.y, tr.r * tr.life, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let i = 0; i < motes.length; i++) {
+    const m = motes[i];
+    m.x += m.vx; m.y += m.vy;
+    m.tw += m.twSpeed;
+    if (m.x < -10) m.x = fx.width + 10;
+    if (m.x > fx.width + 10) m.x = -10;
+    if (m.y < -10) m.y = fx.height + 10;
+    if (m.y > fx.height + 10) m.y = -10;
+    const a = m.alpha * (0.55 + 0.45 * Math.sin(m.tw));
+    ctx.fillStyle = `rgba(${m.color},${a.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  shootCooldown--;
+  if (shootCooldown <= 0 && Math.random() < 0.35) {
+    shooting.push({
+      x: Math.random() * fx.width * 0.7, y: Math.random() * fx.height * 0.45,
+      vx: (5 + Math.random() * 7) * fxDPR, vy: (2.5 + Math.random() * 3.5) * fxDPR,
+      len: (90 + Math.random() * 120) * fxDPR, life: 1,
+      color: Math.random() < 0.5 ? '0,229,255' : '255,46,151'
+    });
+    shootCooldown = 180 + Math.floor(Math.random() * 200);
+  }
+  for (let i = shooting.length - 1; i >= 0; i--) {
+    const s = shooting[i];
+    s.x += s.vx; s.y += s.vy; s.life -= 0.012;
+    if (s.life <= 0) { shooting.splice(i, 1); continue; }
+    const mag = Math.hypot(s.vx, s.vy) || 1;
+    const tailX = s.x - (s.vx / mag) * s.len;
+    const tailY = s.y - (s.vy / mag) * s.len;
+    const grad = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+    grad.addColorStop(0, `rgba(255,255,255,${(s.life * 0.75).toFixed(2)})`);
+    grad.addColorStop(0.3, `rgba(${s.color},${(s.life * 0.5).toFixed(2)})`);
+    grad.addColorStop(1, `rgba(${s.color},0)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.8 * fxDPR;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(tailX, tailY); ctx.stroke();
+  }
+
+  for (let i = hearts.length - 1; i >= 0; i--) {
+    const h = hearts[i];
+    h.x += h.vx; h.y += h.vy; h.vy -= 0.02 * fxDPR; h.life -= 0.015;
+    ctx.globalAlpha = Math.max(0, h.life);
+    drawHeart(h.x, h.y, h.size);
+    if (h.life <= 0) hearts.splice(i, 1);
+  }
+  for (let i = petals.length - 1; i >= 0; i--) {
+    const f = petals[i];
+    f.x += f.vx; f.y += f.vy; f.vy -= 0.015 * fxDPR; f.life -= 0.012;
+    f.rotation += f.rotationSpeed;
+    ctx.globalAlpha = Math.max(0, f.life);
+    drawFlower(f.x, f.y, f.size, f.color, f.rotation);
+    if (f.life <= 0) petals.splice(i, 1);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  requestAnimationFrame(loopFx);
+}
+
+function applyTheme(key) {
+  const data = PEOPLE[key];
+  applyGalaxyColors(data.starPalette);
+  applyRingColors(data.ringColors);
+  rebuildAurora(data.auroraColors);
+  rotateSpeed = data.rotateSpeed;
+  
+  // Aquí se maneja la visibilidad del grupo de personajes de Bluey
+  blueyGroup.visible = !!data.hasBluey;
+  crystalGroup.visible = !!data.hasCrystals;
+  
+  const planetColors = key === 'rocio'
+    ? [[1,1,1], [0.99,0.95,0.78], [0.77,0.71,0.99], [0.83,0.83,0.85]]
+    : [[0,0.9,1], [1,0.82,0.4], [0.66,0.33,0.97], [1,0.18,0.59]];
+  for (let i = 0; i < planets.length && i < planetColors.length; i++) {
+    const c = planetColors[i];
+    planets[i].children[0].material.color.setRGB(c[0], c[1], c[2]);
+    planets[i].children[1].material.color.setRGB(c[0], c[1], c[2]);
+  }
+  pill.textContent = data.pill;
+  pill.style.borderColor = data.pillColor;
+  pill.style.boxShadow = data.pillShadow;
+  pill.style.color = data.pillTextColor;
+  pill.style.textShadow = data.pillTextShadow;
+}
+
+function openPerson(key) {
+  currentPerson = key;
+  const data = PEOPLE[key];
+  buildPhrases(data.phrases, data.phraseColors);
+  applyTheme(key);
+  startScreen.classList.add('hidden');
+  hud.classList.remove('hidden');
+  initAudio();
+  playChime(key === 'rocio' ? 659 : 987, 0.6);
+  setTimeout(showInstructions, 900);
+}
+
+function goHome() {
+  currentPerson = null;
+  clearPhrases();
+  disposePhraseCache();
+  startScreen.classList.remove('hidden');
+  hud.classList.add('hidden');
+  msgDialog.classList.add('hidden');
+}
+
+document.querySelectorAll('.start-button').forEach(btn => {
+  btn.addEventListener('click', () => openPerson(btn.getAttribute('data-person')));
+});
+backBtn.addEventListener('click', goHome);
+
+msgBtn.addEventListener('click', () => {
+  if (!currentPerson) return;
+  const data = PEOPLE[currentPerson];
+  msgTitle.textContent = data.title;
+  msgBody.innerHTML = data.message.map(p => `<p>${p}</p>`).join('');
+  msgDialog.classList.remove('hidden');
+});
+msgClose.addEventListener('click', () => msgDialog.classList.add('hidden'));
+msgDialog.addEventListener('click', e => { if (e.target === msgDialog) msgDialog.classList.add('hidden'); });
+
+let instructionsShown = false;
+function showInstructions() {
+  if (instructionsShown) return;
+  instructionsShown = true;
+  const toast = document.createElement('div');
+  toast.className = 'instructions-toast';
+  toast.innerHTML = `
+    <div>✨ <strong>Arrastra</strong> para explorar la galaxia</div>
+    <div>💖 <strong>Doble toque</strong> para lanzar corazones y flores</div>
+    <div>💌 Toca <strong>Mensaje</strong> para leer tu carta</div>
+    <div>↩️ <strong>Cambiar</strong> para volver al inicio</div>
+  `;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 700);
+  }, 7000);
+}
+
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  setCamera();
+  resizeFx();
+});
+
+const loadMessages = [
+  'Encendiendo las estrellas...',
+  'Pintando las nebulosas...',
+  'Llamando a la familia Bluey...',
+  'Alineando los planetas...',
+  'Puliendo los cristales...',
+  'Preparando los regalos...',
+  '¡Casi listo!'
+];
+let loadProgress = 0;
+let msgIdx = 0;
+let loadStarted = false;
+
+function startLoading() {
+  if (loadStarted) return;
+  loadStarted = true;
+  const msgInt = setInterval(() => {
+    msgIdx = (msgIdx + 1) % loadMessages.length;
+    loaderText.textContent = loadMessages[msgIdx];
+  }, 380);
+
+  const int = setInterval(() => {
+    loadProgress += Math.random() * 12 + 6;
+    if (loadProgress >= 100) {
+      loadProgress = 100;
+      clearInterval(int);
+      clearInterval(msgInt);
+      loaderBar.style.width = '100%';
+      loaderText.textContent = '¡Listo!';
+      setTimeout(() => {
+        loadingScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+        animate();
+      }, 500);
+    } else {
+      loaderBar.style.width = loadProgress + '%';
+    }
+  }, 140);
+}
+
+applyGalaxyColors(PEOPLE.dolores.starPalette);
+rebuildAurora(PEOPLE.dolores.auroraColors);
+applyRingColors(PEOPLE.dolores.ringColors);
+buildPhrases(PEOPLE.dolores.phrases, PEOPLE.dolores.phraseColors);
+
+loopFx();
+
+try {
+  const test = document.createElement('canvas').getContext('webgl') ||
+               document.createElement('canvas').getContext('experimental-webgl');
+  if (!test) throw new Error('WebGL no disponible');
+  startLoading();
+} catch (e) {
+  loaderText.textContent = 'Tu navegador no soporta WebGL. Prueba Chrome, Edge o Firefox.';
+  loaderBar.style.background = '#ff2e97';
+}
+
+})();
+</script>
+</body>
+</html>
